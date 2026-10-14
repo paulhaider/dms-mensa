@@ -1,0 +1,13 @@
+{
+  "id": "mensaUniBe",
+  "name": "Mensa Uni Bern",
+  "description": "Displays daily Mensa food menu from University of Bern.",
+  "version": "0.1.0",
+  "author": "Paul Haider",
+  "icon": "restaurant",
+  "type": "widget",
+  "component": "./MyWidget.qml",
+  "settings": "./Settings.qml",
+  "permissions": ["network", "settings_read", "settings_write"],
+  "requires_dms": ">=1.4.0"
+}
