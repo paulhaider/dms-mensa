@@ -13,6 +13,30 @@ PluginComponent {
 
     property var menus: ({})
 
+    // Comma-separated category names (substring, case-insensitive) to hide, e.g. "pizza, garden"
+    readonly property var excluded: String(pluginData.excludeCategories ?? "").split(",")
+        .map(function(x) { return x.trim().toLowerCase() }).filter(function(x) { return x !== "" })
+
+    // Date of the selected Mensa, shown once at the top of the popout
+    readonly property string headerDate: {
+        var d = (menus[mensaId] ?? {}).date
+        return d && d !== "--" ? d : ""
+    }
+
+    // menus with excluded categories filtered out; used for display
+    readonly property var shown: {
+        var out = {}
+        Object.keys(menus).forEach(function(id) {
+            out[id] = Object.assign({}, menus[id], {
+                dishes: menus[id].dishes.filter(function(d) {
+                    var cat = d.category.toLowerCase()
+                    return !excluded.some(function(x) { return cat.indexOf(x) >= 0 })
+                })
+            })
+        })
+        return out
+    }
+
     readonly property var mensas: ({
         "1": { name: "Mensa Gesellschaftsstrasse", path: "universitat-bern,gesellschaftsstrasse/mensa-gesellschaftsstrasse" },
         "3": { name: "Mensa Von Roll", path: "universitat-bern,hochschulzentrum-vonroll/mensa-vonroll" }
@@ -124,7 +148,7 @@ PluginComponent {
     readonly property string tooltipText: {
         var parts = []
         mensaOrder.forEach(function(id) {
-            var m = menus[id]
+            var m = shown[id]
             if (!m)
                 return
             var lines = [m.name]
@@ -145,7 +169,7 @@ PluginComponent {
     readonly property real estimatedHeight: {
         var h = 2 * Theme.spacingM
         mensaOrder.forEach(function(id) {
-            var m = menus[id]
+            var m = shown[id]
             if (!m)
                 return
             h += 90
@@ -175,12 +199,19 @@ PluginComponent {
             padding: Theme.spacingM
             width: flick.width
 
+            StyledText {
+                text: root.headerDate
+                font.pixelSize: Theme.fontSizeMedium
+                color: Theme.surfaceVariantText
+                visible: text !== ""
+            }
+
             Repeater {
                 model: root.mensaOrder
 
                 Column {
                     id: mensaCol
-                    property var menu: root.menus[modelData] ?? ({})
+                    property var menu: root.shown[modelData] ?? ({})
                     spacing: Theme.spacingS
                     width: body.width - 2 * body.padding
 
@@ -191,10 +222,12 @@ PluginComponent {
                         color: Theme.surfaceText
                     }
 
+                    // only when it differs from the date shown at the top
                     StyledText {
-                        text: mensaCol.menu.date ?? ""
+                        text: mensaCol.menu.date !== root.headerDate ? (mensaCol.menu.date ?? "") : ""
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceVariantText
+                        visible: text !== "" && text !== "--"
                     }
 
                     Repeater {

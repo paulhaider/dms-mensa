@@ -40,6 +40,8 @@ In the plugin settings, you can select which Mensa location to display:
 - Mensa Gesellschaftsstrasse (ID: 1)
 - Mensa Von Roll (ID: 3)
 
+To hide categories (for both Mensas), enter comma-separated names under **Hidden categories**, e.g. `pizza` hides Daily Pizza, Weekly Pizza and Pizza Dello Chef. Matching is case-insensitive and on part of the name.
+
 ## Requirements
 
 - DankMaterialShell >= 1.4.0
