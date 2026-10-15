@@ -84,6 +84,38 @@ PluginComponent {
         xhr.send()
     }
 
+    // Photo URLs of the dishes being shown
+    readonly property var photoUrls: {
+        var urls = []
+        if (!showImages)
+            return urls
+        mensaOrder.forEach(function(id) {
+            ((shown[id] ?? {}).dishes ?? []).forEach(function(d) {
+                var u = photoUrl(images[d.url])
+                if (u && urls.indexOf(u) < 0)
+                    urls.push(u)
+            })
+        })
+        return urls
+    }
+
+    // Keeps the photos loaded while the shell runs. The popout is destroyed on close, but Qt's
+    // pixmap cache serves identical url + sourceSize to its Images without downloading again.
+    Repeater {
+        model: root.photoUrls
+
+        Image {
+            source: modelData
+            sourceSize: Qt.size(root.photoWidth, root.photoHeight)
+            asynchronous: true
+            cache: true
+            visible: false
+        }
+    }
+
+    readonly property int photoWidth: 600
+    readonly property int photoHeight: 280
+
     // Scraped data is untrusted: only allow known HTTPS hosts for links and photos
     function foodUrl(u) { return /^https:\/\/app\.food2050\.ch\//.test(u ?? "") ? u : "" }
     function photoUrl(u) { return /^https:\/\/storage\.googleapis\.com\//.test(u ?? "") ? u : "" }
@@ -312,7 +344,9 @@ PluginComponent {
                                 width: parent.width
                                 height: 140
                                 fillMode: Image.PreserveAspectCrop
+                                sourceSize: Qt.size(root.photoWidth, root.photoHeight)
                                 asynchronous: true
+                                cache: true
                                 visible: source != "" && status !== Image.Error
 
                                 MouseArea {
