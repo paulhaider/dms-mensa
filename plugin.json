@@ -8,6 +8,6 @@
   "type": "widget",
   "component": "./MyWidget.qml",
   "settings": "./Settings.qml",
-  "permissions": ["network", "settings_read", "settings_write"],
+  "permissions": ["network", "settings_read"],
   "requires_dms": ">=1.4.0"
 }

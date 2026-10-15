@@ -9,9 +9,9 @@ PluginComponent {
     id: root
 
     property string mensaId: pluginData.mensaId ?? "1"
-    onMensaIdChanged: fetchMensaData()
 
     property var menus: ({})
+    readonly property bool showImages: pluginData.showImages ?? true
 
     // Comma-separated category names (substring, case-insensitive) to hide, e.g. "pizza, garden"
     readonly property var excluded: String(pluginData.excludeCategories ?? "").split(",")
@@ -44,7 +44,6 @@ PluginComponent {
 
     // Selected mensa first, then the others
     readonly property var mensaOrder: [mensaId].concat(Object.keys(mensas).filter(function(id) { return id !== mensaId }))
-    readonly property var current: menus[mensaId] ?? ({})
 
     function setMenu(id, patch) {
         var m = Object.assign({}, root.menus)
@@ -75,12 +74,65 @@ PluginComponent {
                 return
             }
             try {
-                root.setMenu(id, Object.assign({ loading: false }, root.pickDay(root.parseMenu(xhr.responseText))))
+                var day = root.pickDay(root.parseMenu(xhr.responseText))
+                root.setMenu(id, Object.assign({ loading: false }, day))
+                root.fetchImages(day.dishes)
             } catch (e) {
                 root.setMenu(id, { loading: false, error: true, errorMessage: "Food2050 page format may have changed (" + e.message + ")" })
             }
         }
         xhr.send()
+    }
+
+    // Scraped data is untrusted: only allow known HTTPS hosts for links and photos
+    function foodUrl(u) { return /^https:\/\/app\.food2050\.ch\//.test(u ?? "") ? u : "" }
+    function photoUrl(u) { return /^https:\/\/storage\.googleapis\.com\//.test(u ?? "") ? u : "" }
+    function plain(t) { return String(t).replace(/[<>]/g, "") }
+
+    function openDish(u) {
+        var url = root.foodUrl(u)
+        if (url)
+            Qt.openUrlExternally(url)
+    }
+
+    // dish detail URL -> photo URL ("" = none); filled lazily for the dishes being shown
+    property var images: root.loadImageCache()
+
+    // Persisted across restarts (PluginService state file); entries older than 14 days are dropped
+    function loadImageCache() {
+        var cached = PluginService.loadPluginState("mensaUniBe", "imageCache", {})
+        var cutoff = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10)
+        var out = {}
+        Object.keys(cached).forEach(function(url) {
+            if (root.foodUrl(url) && url.slice(-10) >= cutoff)
+                out[url] = root.photoUrl(cached[url])
+        })
+        return out
+    }
+
+    function fetchImages(dishes) {
+        if (!root.showImages)
+            return
+        dishes.forEach(function(dish) {
+            if (!dish.url || root.images[dish.url] !== undefined)
+                return
+            var xhr = new XMLHttpRequest()
+            xhr.open("GET", dish.url)
+            xhr.timeout = 15000
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState !== XMLHttpRequest.DONE)
+                    return
+                var m = xhr.status === 200 ? xhr.responseText.replace(/\\"/g, '"').match(/"imageUrl":"([^"]+)"/) : null
+                // leave unset on network errors so the next refresh retries
+                if (xhr.status !== 200)
+                    return
+                var imgs = Object.assign({}, root.images)
+                imgs[dish.url] = m ? root.photoUrl(m[1]) : ""
+                root.images = imgs
+                PluginService.savePluginState("mensaUniBe", "imageCache", imgs)
+            }
+            xhr.send()
+        })
     }
 
     // The page embeds its data as escaped JSON; each dish is an OutletMenuItemDish object.
@@ -90,7 +142,7 @@ PluginComponent {
         var items = []
         for (var i = 0; i < chunks.length; i++) {
             var c = chunks[i]
-            var d = c.match(/"detailUrl":"[^"]*?\/(\d{4}-\d\d-\d\d)"/)
+            var d = c.match(/"detailUrl":"([^"]*?\/(\d{4}-\d\d-\d\d))"/)
             var n = c.match(/"name":"([^"]*)","description":"((?:[^"\\]|\\.)*)"/)
             if (!d || !n)
                 continue
@@ -99,10 +151,11 @@ PluginComponent {
             var veg = c.match(/"isVegetarian":(true|false)/)
             var vegan = c.match(/"isVegan":(true|false)/)
             items.push({
-                date: d[1],
-                category: k ? k[1] : "",
-                name: n[1],
-                description: n[2].replace(/\\u([0-9a-fA-F]{4})/g, function(m, h) { return String.fromCharCode(parseInt(h, 16)) }),
+                date: d[2],
+                url: root.foodUrl(d[1]),
+                category: k ? root.plain(k[1]) : "",
+                name: root.plain(n[1]),
+                description: root.plain(n[2].replace(/\\u([0-9a-fA-F]{4})/g, function(m, h) { return String.fromCharCode(parseInt(h, 16)) })),
                 vegetarian: !!veg && veg[1] === "true",
                 vegan: !!vegan && vegan[1] === "true"
             })
@@ -167,26 +220,29 @@ PluginComponent {
     property real measuredHeight: 0
     // Until then, estimate from the data
     readonly property real estimatedHeight: {
-        var h = 2 * Theme.spacingM
+        // Mensas are side by side, so the tallest one counts
+        var tallest = 0
         mensaOrder.forEach(function(id) {
             var m = shown[id]
             if (!m)
                 return
-            h += 90
-            m.dishes.forEach(function(d) { h += 70 + 18 * Math.ceil(d.description.length / 55) })
+            var h = 60
+            m.dishes.forEach(function(d) { h += 70 + 18 * Math.ceil(d.description.length / 35) + (showImages && images[d.url] ? 150 : 0) })
             if (m.error || m.loading)
                 h += 30
+            tallest = Math.max(tallest, h)
         })
-        return h
+        return 2 * Theme.spacingM + 40 + tallest
     }
     readonly property real popoutContentHeight: measuredHeight > 0 ? measuredHeight : estimatedHeight
+    popoutWidth: 900
     popoutHeight: Math.min(800, popoutContentHeight)
 
     popoutContent: Component {
         Flickable {
             id: flick
             clip: true
-            implicitWidth: 500
+            implicitWidth: 900
             implicitHeight: Math.min(800, contentHeight)
             contentWidth: width
             contentHeight: body.height
@@ -206,6 +262,11 @@ PluginComponent {
                 visible: text !== ""
             }
 
+            Row {
+                id: mensaRow
+                spacing: Theme.spacingL
+                width: body.width - 2 * body.padding
+
             Repeater {
                 model: root.mensaOrder
 
@@ -213,7 +274,7 @@ PluginComponent {
                     id: mensaCol
                     property var menu: root.shown[modelData] ?? ({})
                     spacing: Theme.spacingS
-                    width: body.width - 2 * body.padding
+                    width: (mensaRow.width - (root.mensaOrder.length - 1) * mensaRow.spacing) / root.mensaOrder.length
 
                     StyledText {
                         text: mensaCol.menu.name ?? ""
@@ -239,23 +300,47 @@ PluginComponent {
 
                             StyledText {
                                 text: modelData.category + (modelData.vegan ? " · vegan" : (modelData.vegetarian ? " · vegetarisch" : ""))
+                                textFormat: Text.PlainText
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.primary
                                 font.weight: Font.Bold
                                 visible: text !== ""
                             }
 
+                            Image {
+                                source: root.showImages ? root.photoUrl(root.images[modelData.url]) : ""
+                                width: parent.width
+                                height: 140
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                visible: source != "" && status !== Image.Error
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.openDish(modelData.url)
+                                }
+                            }
+
                             StyledText {
                                 text: modelData.name
+                                textFormat: Text.PlainText
                                 font.pixelSize: Theme.fontSizeMedium
                                 font.weight: Font.Bold
                                 color: Theme.surfaceText
                                 wrapMode: Text.WordWrap
                                 width: parent.width
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.openDish(modelData.url)
+                                }
                             }
 
                             StyledText {
                                 text: modelData.description
+                                textFormat: Text.PlainText
                                 font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.surfaceVariantText
                                 wrapMode: Text.WordWrap
@@ -278,6 +363,7 @@ PluginComponent {
                         height: Theme.spacingM
                     }
                 }
+            }
             }
         }
         }

@@ -11,7 +11,7 @@ Shows a restaurant icon. Hover it for a tooltip listing today's dishes for both 
 Click the pill to open a popout with, for each Mensa:
 
 - Mensa name and date
-- Today's dishes by category (Garden, Farm, …) with description and a vegetarian/vegan flag
+- Today's dishes by category (Garden, Farm, …) with photo, description and a vegetarian/vegan flag. Click a dish name or photo to open its Food2050 page in the browser
 - Error/loading status
 
 On weekends the next day with a menu is shown.
@@ -21,7 +21,7 @@ On weekends the next day with a menu is shown.
 Clone directly into the plugins folder:
 
 ```bash
-git clone <repo-url> ~/.config/DankMaterialShell/plugins/mensaUniBe
+git clone https://github.com/paulhaider/dms-mensa ~/.config/DankMaterialShell/plugins/mensaUniBe
 dms restart
 ```
 
@@ -39,6 +39,8 @@ Then: Settings → Plugins → Scan for Plugins → enable **Mensa Uni Bern** �
 In the plugin settings, you can select which Mensa location to display:
 - Mensa Gesellschaftsstrasse (ID: 1)
 - Mensa Von Roll (ID: 3)
+
+Photos can be turned off with **Show dish photos**. They are loaded from each dish's Food2050 page (one request per dish). The photo URLs are cached on disk, so each dish is requested only once, not on every restart.
 
 To hide categories (for both Mensas), enter comma-separated names under **Hidden categories**, e.g. `pizza` hides Daily Pizza, Weekly Pizza and Pizza Dello Chef. Matching is case-insensitive and on part of the name.
 
