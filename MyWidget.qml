@@ -169,7 +169,8 @@ PluginComponent {
 
     // The page embeds its data as escaped JSON; each dish is an OutletMenuItemDish object.
     function parseMenu(html) {
-        var s = html.replace(/\\"/g, '"')
+        // Quotes inside dish names arrive triple-escaped (\\\"); protect them before unescaping the rest
+        var s = html.replace(/\\\\\\"/g, "\u0001").replace(/\\"/g, '"')
         var chunks = s.split('"__typename":"OutletMenuItemDish"').slice(1)
         var items = []
         for (var i = 0; i < chunks.length; i++) {
@@ -178,28 +179,23 @@ PluginComponent {
             var n = c.match(/"name":"([^"]*)","description":"((?:[^"\\]|\\.)*)"/)
             if (!d || !n)
                 continue
-            // category is sometimes a back-reference ("$7:...") instead of an object
+            // The category is sometimes a back-reference ("$7:...") instead of an object;
+            // the URL slug (...,hauptspeisen,daily-pizza/<date>) is always there.
             var k = c.match(/"category":\{[^}]*"name":"([^"]*)"/)
+            var slug = d[1].match(/,([a-z0-9-]+)\/\d{4}-\d\d-\d\d$/)
+            var category = k ? k[1] : (slug ? slug[1].split("-").map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1) }).join(" ") : "")
             var veg = c.match(/"isVegetarian":(true|false)/)
             var vegan = c.match(/"isVegan":(true|false)/)
             items.push({
                 date: d[2],
                 url: root.foodUrl(d[1]),
-                category: k ? root.plain(k[1]) : "",
-                name: root.plain(n[1]),
-                description: root.plain(n[2].replace(/\\u([0-9a-fA-F]{4})/g, function(m, h) { return String.fromCharCode(parseInt(h, 16)) })),
+                category: root.plain(category),
+                name: root.plain(n[1].replace(/\u0001/g, '"')),
+                description: root.plain(n[2].replace(/\u0001/g, '"').replace(/\\u([0-9a-fA-F]{4})/g, function(m, h) { return String.fromCharCode(parseInt(h, 16)) })),
                 vegetarian: !!veg && veg[1] === "true",
                 vegan: !!vegan && vegan[1] === "true"
             })
         }
-        // Fill missing categories from the same position on other days
-        var seen = {}, byPos = {}
-        items.forEach(function(it) {
-            var pos = seen[it.date] = (seen[it.date] ?? -1) + 1
-            it.pos = pos
-            if (it.category && !byPos[pos]) byPos[pos] = it.category
-        })
-        items.forEach(function(it) { if (!it.category) it.category = byPos[it.pos] ?? "" })
         return items
     }
 
