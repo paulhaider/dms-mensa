@@ -3,6 +3,7 @@
   "name": "Mensa Uni Bern",
   "description": "Displays daily Mensa food menu from University of Bern.",
   "version": "0.1.0",
+  "license": "MIT",
   "author": "Paul Haider",
   "icon": "restaurant",
   "type": "widget",

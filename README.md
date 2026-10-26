@@ -54,3 +54,7 @@ Pizza categories are hidden by default. To change that (for both Mensas), edit t
 Food2050 has no public API, so the plugin reads the dish data that the weekly menu page embeds as JSON. This depends on the page's internal structure, so if Food2050 changes it, the popout shows "Food2050 page format may have changed" until the parser is updated.
 
 The menu data is refreshed automatically every hour.
+
+## License
+
+[MIT](LICENSE)
