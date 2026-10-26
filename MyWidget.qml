@@ -14,7 +14,7 @@ PluginComponent {
     readonly property bool showImages: pluginData.showImages ?? true
 
     // Comma-separated category names (substring, case-insensitive) to hide, e.g. "pizza, garden"
-    readonly property var excluded: String(pluginData.excludeCategories ?? "").split(",")
+    readonly property var excluded: String(pluginData.excludeCategories ?? "pizza").split(",")
         .map(function(x) { return x.trim().toLowerCase() }).filter(function(x) { return x !== "" })
 
     // Date of the selected Mensa, shown once at the top of the popout

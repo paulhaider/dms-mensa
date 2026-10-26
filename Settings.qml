@@ -17,8 +17,8 @@ PluginSettings {
     StringSetting {
         settingKey: "excludeCategories"
         label: "Hidden categories"
-        description: "Comma-separated category names to hide, e.g. \"pizza, special\". Matches part of the name, ignoring case."
-        defaultValue: ""
+        description: "Comma-separated category names to hide, e.g. \"pizza, special\". Matches part of the name, ignoring case. Empty shows everything."
+        defaultValue: "pizza"
     }
 
     ToggleSetting {

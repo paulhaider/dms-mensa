@@ -42,7 +42,7 @@ In the plugin settings, you can select which Mensa location to display:
 
 Photos can be turned off with **Show dish photos**. They are loaded from each dish's Food2050 page (one request per dish). The photo URLs are cached on disk, so each dish is requested only once, not on every restart.
 
-To hide categories (for both Mensas), enter comma-separated names under **Hidden categories**, e.g. `pizza` hides Daily Pizza, Weekly Pizza and Pizza Dello Chef. Matching is case-insensitive and on part of the name.
+Pizza categories are hidden by default. To change that (for both Mensas), edit the comma-separated names under **Hidden categories**, e.g. `pizza` hides Daily Pizza, Weekly Pizza and Pizza Dello Chef. Matching is case-insensitive and on part of the name. Clear the field to show everything.
 
 ## Requirements
 
