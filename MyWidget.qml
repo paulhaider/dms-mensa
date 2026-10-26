@@ -190,7 +190,7 @@ PluginComponent {
                 date: d[2],
                 url: root.foodUrl(d[1]),
                 category: root.plain(category),
-                name: root.plain(n[1].replace(/\u0001/g, '"')),
+                name: root.plain(n[1].replace(/\u0001/g, '"').replace(/\\u([0-9a-fA-F]{4})/g, function(m, h) { return String.fromCharCode(parseInt(h, 16)) })),
                 description: root.plain(n[2].replace(/\u0001/g, '"').replace(/\\u([0-9a-fA-F]{4})/g, function(m, h) { return String.fromCharCode(parseInt(h, 16)) })),
                 vegetarian: !!veg && veg[1] === "true",
                 vegan: !!vegan && vegan[1] === "true"
