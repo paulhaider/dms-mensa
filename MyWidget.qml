@@ -51,6 +51,10 @@ PluginComponent {
         root.menus = m
     }
 
+    function menuUrl(mensa) {
+        return "https://app.food2050.ch/de/v2/zfv/" + mensa.path + "/mittagsverpflegung/menu/weekly"
+    }
+
     function fetchMensaData() {
         root.mensaOrder.forEach(function(id) { root.fetchMensa(id) })
     }
@@ -64,7 +68,7 @@ PluginComponent {
         root.setMenu(id, { loading: true, error: false, errorMessage: "" })
 
         var xhr = new XMLHttpRequest()
-        xhr.open("GET", "https://app.food2050.ch/de/v2/zfv/" + mensa.path + "/mittagsverpflegung/menu/weekly")
+        xhr.open("GET", root.menuUrl(mensa))
         xhr.timeout = 15000
         xhr.onreadystatechange = function() {
             if (xhr.readyState !== XMLHttpRequest.DONE)
@@ -309,6 +313,13 @@ PluginComponent {
                         font.pixelSize: Theme.fontSizeLarge
                         font.weight: Font.Bold
                         color: Theme.surfaceText
+
+                        // opens the full weekly menu on Food2050
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.openDish(root.menuUrl(root.mensas[modelData]))
+                        }
                     }
 
                     // only when it differs from the date shown at the top

@@ -10,7 +10,7 @@ Shows a restaurant icon. Hover it for a tooltip listing today's dishes for both 
 
 Click the pill to open a popout showing both Mensas side by side (the primary one on the left), with the date at the top and, for each Mensa:
 
-- Mensa name
+- Mensa name (click it to open the full weekly menu on Food2050)
 - Today's dishes by category (Garden, Farm, …) with photo, description and a vegetarian/vegan flag. Click a dish name or photo to open its Food2050 page in the browser
 - Error/loading status
 
